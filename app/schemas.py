@@ -14,6 +14,7 @@ class Post(PostBase):
     id: int
     created_at: datetime
     likes: int = 0
+    views: int = 0
     comment_count: int = 0
     # We don't return the deletion_password
 

@@ -88,6 +88,37 @@ async def like_post(post_id: int, request: Request):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/{post_id}/views", response_model=Post)
+async def increment_views(post_id: int, request: Request):
+    try:
+        supabase = request.app.state.supabase
+        
+        # Fetch current views
+        res = await supabase.table("posts").select("views").eq("id", post_id).execute()
+        
+        if not res.data or len(res.data) == 0:
+             raise HTTPException(status_code=404, detail="Post not found")
+             
+        current_views = res.data[0].get("views") or 0
+        new_views = current_views + 1
+        
+        # Update views
+        update_res = await supabase.table("posts").update({"views": new_views}).eq("id", post_id).select("*, comments(count)").execute()
+        
+        if not update_res.data or len(update_res.data) == 0:
+             raise HTTPException(status_code=500, detail="Failed to increment views")
+             
+        post_data = update_res.data[0]
+        comments_data = post_data.get("comments", [])
+        if isinstance(comments_data, list) and len(comments_data) > 0:
+            post_data["comment_count"] = comments_data[0].get("count", 0)
+        else:
+            post_data["comment_count"] = 0
+
+        return post_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/{post_id}")
 async def delete_post(request: Request, post_id: int, password: str):
     try:
