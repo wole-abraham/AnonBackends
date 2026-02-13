@@ -13,10 +13,12 @@ class PostCreate(PostBase):
 class Post(PostBase):
     id: int
     created_at: datetime
+    likes: int = 0
+    comment_count: int = 0
     # We don't return the deletion_password
 
     class Config:
-        from_attributes = True
+        from_attributes = True  
 
 class CommentBase(BaseModel):
     content: str
@@ -28,7 +30,7 @@ class CommentCreate(CommentBase):
 class Comment(CommentBase):
     id: int
     post_id: int
-    created_at: datetime
+    likes: int = 0
 
     class Config:
         from_attributes = True
