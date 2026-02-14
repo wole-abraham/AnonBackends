@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import posts, comments
+from .routers import posts, comments, store
 from .database import create_supabase
+from .storage import Storage
 
 app = FastAPI(title="Anon Platform Backend")
 
@@ -24,10 +25,12 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     app.state.supabase = await create_supabase()
+    app.state.storage = Storage()
 
 
 app.include_router(posts.router)
 app.include_router(comments.router)
+app.include_router(store.router)
 
 @app.get("/")
 def read_root():

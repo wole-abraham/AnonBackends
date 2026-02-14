@@ -1,13 +1,15 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 class PostBase(BaseModel):
     title: Optional[str] = None
+    anonymous_id: Optional[str] = None
     content: str
     is_anonymous: bool = True
-
-class PostCreate(PostBase):
+    images: List[str] = []
+    
+class   PostCreate(PostBase):
     deletion_password: str
 
 class Post(PostBase):

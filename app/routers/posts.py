@@ -1,26 +1,39 @@
 from fastapi import APIRouter, HTTPException, Request
 from typing import List
 from ..schemas import PostCreate, Post
+from ..storage import Storage
+from fastapi.responses import Response
 
 router = APIRouter(
     prefix="/posts",
     tags=["posts"]
 )
 
-@router.post("/", response_model=Post)
-async def create_post(request: Request, post: PostCreate):
+@router.get("/upload/{count}")
+async def get_upload_url(count: int, request: Request):
     try:
-        supabase = request.app.state.supabase
-        data = post.dict()
-        response = await supabase.table("posts").insert(data).execute()
-        
-        # Verify response structure, usually response.data is a list of created objects
-        if not response.data or len(response.data) == 0:
-            raise HTTPException(status_code=500, detail="Failed to create post")
-            
-        return response.data[0]
+        storage = Storage()
+        return storage.generate_upload_url(count)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/", response_model=Post)
+async def create_post(request: Request, post: PostCreate):
+    supabase = request.app.state.supabase
+    print(post)
+    response = await supabase.rpc(
+    "create_post_with_images",
+    {
+        "p_content": post.content,
+        "p_anonymous_id": post.anonymous_id,
+        "p_image_keys": post.images,
+        "p_title": post.title,
+        "p_deletion_password": post.deletion_password
+    }
+).execute()
+    
+    return Response(status_code=200)
+   
 
 @router.get("/", response_model=List[Post])
 async def get_posts(request: Request):
@@ -41,6 +54,13 @@ async def get_posts(request: Request):
                 post["comment_count"] = 0
             # Remove keys not in schema if necessary, but Pydantic ignores extras if configured (default is ignore)
                 
+            # Sign image URLs if present
+            if post.get("images"):
+                # Initialize storage only if needed and once logic could be better but this is fine
+                # Optimization: Init storage outside loop if heavily used, but here is fine
+                storage = Storage()
+                post["images"] = storage.generate_download_url(post["images"])
+                
         return posts_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -59,6 +79,10 @@ async def get_post(post_id: int, request: Request):
             post_data["comment_count"] = comments_data[0].get("count", 0)
         else:
             post_data["comment_count"] = 0
+            
+        if post_data.get("images"):
+            storage = Storage()
+            post_data["images"] = storage.generate_download_url(post_data["images"])
             
         return post_data
     except Exception as e:
@@ -83,8 +107,13 @@ async def like_post(post_id: int, request: Request):
         
         if not update_res.data or len(update_res.data) == 0:
              raise HTTPException(status_code=500, detail="Failed to like post")
+        
+        post_data = update_res.data[0]
+        if post_data.get("images"):
+            storage = Storage()
+            post_data["images"] = storage.generate_download_url(post_data["images"])
              
-        return update_res.data[0]
+        return post_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -114,6 +143,10 @@ async def increment_views(post_id: int, request: Request):
             post_data["comment_count"] = comments_data[0].get("count", 0)
         else:
             post_data["comment_count"] = 0
+
+        if post_data.get("images"):
+            storage = Storage()
+            post_data["images"] = storage.generate_download_url(post_data["images"])
 
         return post_data
     except Exception as e:
