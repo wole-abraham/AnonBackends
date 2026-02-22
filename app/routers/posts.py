@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from typing import List
 from ..schemas import PostCreate, Post
 from ..storage import Storage
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 
 router = APIRouter(
     prefix="/posts",
@@ -41,27 +41,9 @@ async def get_posts(request: Request):
         supabase = request.app.state.supabase
         # Select posts and the count of comments
         # Assumes a foreign key relationship exists between comments and posts
-        response = await supabase.table("posts").select("*, comments(count)").order("created_at", desc=True).execute()
+        response = await supabase.table("posts").select("*, comments(count), post_images(object_key)").order("created_at", desc=True).execute()
         
-        posts_data = response.data
-        for post in posts_data:
-            # Map comments count to comment_count field
-            # PostgREST returns comments as [{'count': n}] or []
-            comments_data = post.get("comments", [])
-            if isinstance(comments_data, list) and len(comments_data) > 0:
-                post["comment_count"] = comments_data[0].get("count", 0)
-            else:
-                post["comment_count"] = 0
-            # Remove keys not in schema if necessary, but Pydantic ignores extras if configured (default is ignore)
-                
-            # Sign image URLs if present
-            if post.get("images"):
-                # Initialize storage only if needed and once logic could be better but this is fine
-                # Optimization: Init storage outside loop if heavily used, but here is fine
-                storage = Storage()
-                post["images"] = storage.generate_download_url(post["images"])
-                
-        return posts_data
+        return JSONResponse(status_code=200, content=response.data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

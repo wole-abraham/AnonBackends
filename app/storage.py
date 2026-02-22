@@ -68,3 +68,5 @@ class Storage():
         return download_url
     
 
+inst = Storage()
+print(inst.generate_upload_url(count=1))
