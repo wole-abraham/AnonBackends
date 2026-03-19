@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Live Feed</h2>
+<ul id="posts"></ul>
+
+<input id="input" placeholder="Write something" />
+<button onclick="sendPost()">Post</button>
+
+<script>
+const socket = new WebSocket("ws://localhost:8000/ws");
+
+socket.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+
+  if (msg.type === "new_post") {
+    const li = document.createElement("li");
+    li.textContent = msg.data.text;
+    document.getElementById("posts").appendChild(li);
+  }
+};
+
+async function sendPost() {
+  const text = document.getElementById("input").value;
+
+  await fetch("http://localhost:8000/post", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  });
+}
+</script>
+
+</body>
+</html>
