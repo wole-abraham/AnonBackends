@@ -9,7 +9,7 @@ connections: List[WebSocket] =[]
 
 app = APIRouter()
 
-CURRENT_VERSION = "1.0.0"
+CURRENT_VERSION = "1.0.2"
 
 def check_version(request: Request):
     client_version = request.headers.get("x-app-version")
@@ -48,7 +48,8 @@ async def create_post(request: Request, data: dict):
     return {"status": "success", "id": post["id"]}
 
 @app.get("/posts")
-async def get_posts():
+async def get_posts(request: Request):
+    check_version(request)
     return posts
 
 @app.get("/version")
