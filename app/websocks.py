@@ -11,7 +11,7 @@ connections: List[WebSocket] =[]
 
 app = APIRouter()
 
-CURRENT_VERSION = "1.0.3"
+CURRENT_VERSION = "1.0.4"
 
 def check_version(request: Request):
     client_version = request.headers.get("x-app-version")
