@@ -87,8 +87,6 @@ async def create_comment(request: Request, post_id: str, data: dict):
         "created_at": comment.created_at.isoformat(),
         "likes": comment.likes,
     }
-    for ws in connections:
-        await ws.send_json(comment_data)
     return {"status": "successs"}
 
 @app.get("/comments/{post_id}")
