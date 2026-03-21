@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import posts, comments, store
 from .database import create_supabase
 from .storage import Storage
 from .websocks import app as websocket_app
+from .db import create_db_and_tables
 
 app = FastAPI(title="Anon Platform Backend")
 
@@ -29,11 +29,9 @@ app.add_middleware(
 async def startup_event():
     app.state.supabase = await create_supabase()
     app.state.storage = Storage()
+    create_db_and_tables()
 
 
-app.include_router(posts.router)
-app.include_router(comments.router)
-app.include_router(store.router)
 app.include_router(websocket_app)
 
 @app.get("/")

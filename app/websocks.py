@@ -1,7 +1,9 @@
-from fastapi import WebSocket, WebSocketDisconnect, Request
-from fastapi.routing import APIRouter
+from fastapi import WebSocket, WebSocketDisconnect, Request, APIRouter
+from sqlmodel import Session, select
+from .db import engine
 from typing import List
 from uuid import uuid4
+from .model import Post, Comment
 from fastapi.responses import JSONResponse
 
 
@@ -9,7 +11,7 @@ connections: List[WebSocket] =[]
 
 app = APIRouter()
 
-CURRENT_VERSION = "1.0.2"
+CURRENT_VERSION = "1.0.3"
 
 def check_version(request: Request):
     client_version = request.headers.get("x-app-version")
@@ -37,20 +39,33 @@ async def websocket_endpoint(ws:WebSocket):
 @app.post("/post")
 async def create_post(request: Request, data: dict):
     check_version(request)
-    post = {
-        "id": str(uuid4()),
-        "type": "new_post",
-        "data": data
+    print(data)
+    with Session(engine) as session:
+        
+        post = Post(
+            content=data["text"],
+        )
+        session.add(post)
+        session.commit()
+        session.refresh(post)
+    post_data = {
+        "id": post.id,
+        "content": post.content,
+        "created_at": post.created_at.isoformat(),
+        "likes": post.likes,
+        "views": post.views,
+        "comment_count": post.comment_count
     }
-    posts.append(post)
     for ws in connections:
-        await ws.send_json(post)
-    return {"status": "success", "id": post["id"]}
+        await ws.send_json(post_data)
+    return {"status": "successs"}
 
 @app.get("/posts")
 async def get_posts(request: Request):
     check_version(request)
-    return posts
+    with Session(engine) as session:
+        posts = session.exec(select(Post)).all()
+        return posts
 
 @app.get("/version")
 async def version():
