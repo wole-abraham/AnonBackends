@@ -62,10 +62,50 @@ async def create_post(request: Request, data: dict):
 
 @app.get("/posts")
 async def get_posts(request: Request):
-    check_version(request)
+    # check_version(request)
     with Session(engine) as session:
         posts = session.exec(select(Post)).all()
         return posts
+
+@app.post("/comment/{post_id}")
+async def create_comment(request: Request, post_id: str, data: dict):
+    # check_version(request)
+    print(data)
+    with Session(engine) as session:
+        
+        comment = Comment(
+            post_id=post_id,
+            content=data["content"],
+        )
+        session.add(comment)
+        session.commit()
+        session.refresh(comment)
+    comment_data = {
+        "id": comment.id,
+        "post_id": comment.post_id,
+        "content": comment.content,
+        "created_at": comment.created_at.isoformat(),
+        "likes": comment.likes,
+    }
+    for ws in connections:
+        await ws.send_json(comment_data)
+    return {"status": "successs"}
+
+@app.get("/comments/{post_id}")
+async def get_comments(request: Request, post_id: str):
+    # check_version(request)
+    with Session(engine) as session:
+        comments = session.exec(select(Comment).where(Comment.post_id == post_id)).all()
+        comment_data = []
+        for comment in comments:
+            comment_data.append({
+                "id": comment.id,
+                "post_id": comment.post_id,
+                "content": comment.content,
+                "created_at": comment.created_at.isoformat(),
+                "likes": comment.likes,
+            })
+        return comment_data
 
 @app.get("/version")
 async def version():
