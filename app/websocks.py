@@ -59,7 +59,7 @@ async def create_post(request: Request, data: dict):
         "views": post.views,
         "comment_count": post.comment_count
     }
-    if post_data['content'].lower() in restricted_names:
+    if any(name in post_data['content'].lower() for name in restricted_names):
         return {"status": "successs"}
     for ws in connections:
         await ws.send_json(post_data)
