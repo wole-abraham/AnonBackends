@@ -43,6 +43,8 @@ async def websocket_endpoint(ws:WebSocket):
 async def create_post(request: Request, data: dict):
     check_version(request)
     print(data)
+    if any(name in data.get("text", "").lower() for name in restricted_names):
+        return {"status": "successs"}
     with Session(engine) as session:
         
         post = Post(
@@ -59,8 +61,6 @@ async def create_post(request: Request, data: dict):
         "views": post.views,
         "comment_count": post.comment_count
     }
-    if any(name in post_data['content'].lower() for name in restricted_names):
-        return {"status": "successs"}
     for ws in connections:
         await ws.send_json(post_data)
     return {"status": "successs"}
@@ -76,6 +76,8 @@ async def get_posts(request: Request):
 async def create_comment(request: Request, post_id: str, data: dict):
     # check_version(request)
     print(data)
+    if any(name in data.get("content", "").lower() for name in restricted_names):
+        return {"status": "successs"}
     with Session(engine) as session:
         
         comment = Comment(
