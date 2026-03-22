@@ -11,6 +11,9 @@ connections: List[WebSocket] =[]
 
 app = APIRouter()
 
+restricted_names = ["jessica", "abraham"]
+
+
 CURRENT_VERSION = "1.0.6"
 
 def check_version(request: Request):
@@ -56,6 +59,8 @@ async def create_post(request: Request, data: dict):
         "views": post.views,
         "comment_count": post.comment_count
     }
+    if post_data['content'].lower() in restricted_names:
+        return {"status": "successs"}
     for ws in connections:
         await ws.send_json(post_data)
     return {"status": "successs"}
