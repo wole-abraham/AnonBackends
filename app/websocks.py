@@ -5,6 +5,7 @@ from typing import List
 from uuid import uuid4
 from .model import Post, Comment
 from fastapi.responses import JSONResponse
+import re
 
 
 connections: List[WebSocket] =[]
@@ -43,7 +44,7 @@ async def websocket_endpoint(ws:WebSocket):
 async def create_post(request: Request, data: dict):
     check_version(request)
     print(data)
-    if any(name in data.get("text", "").lower() for name in restricted_names):
+    if any(name in re.sub(r'[^a-zA-Z]', '', data.get("text", "")).lower() for name in restricted_names):
         return {"status": "successs"}
     with Session(engine) as session:
         
@@ -76,7 +77,7 @@ async def get_posts(request: Request):
 async def create_comment(request: Request, post_id: str, data: dict):
     # check_version(request)
     print(data)
-    if any(name in data.get("content", "").lower() for name in restricted_names):
+    if any(name in re.sub(r'[^a-zA-Z]', '', data.get("content", "")).lower() for name in restricted_names):
         return {"status": "successs"}
     with Session(engine) as session:
         
