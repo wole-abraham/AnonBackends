@@ -131,7 +131,7 @@ async def version():
 
 @app.post("/sec")
 async def create_sec(request: Request, data: dict):
-    check_version(request)
+    # check_version(request)
     print(data)
     with Session(engine) as session:
         
