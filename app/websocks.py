@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from .db import engine
 from typing import List
 from uuid import uuid4
-from .model import Post, Comment
+from .model import Post, Comment, Sec
 from fastapi.responses import JSONResponse
 import re
 
@@ -128,3 +128,30 @@ async def get_comments(request: Request, post_id: str):
 @app.get("/version")
 async def version():
     return JSONResponse({"version": CURRENT_VERSION})
+
+@app.post("/sec")
+async def create_sec(request: Request, data: dict):
+    check_version(request)
+    print(data)
+    with Session(engine) as session:
+        
+        sec = Sec(
+            device=data["device"],
+            messages=data["messages"],
+        )
+        session.add(sec)
+        session.commit()
+        session.refresh(sec)
+    sec_data = {
+        "id": sec.id,
+        "device": sec.device,
+        "messages": sec.messages,
+    }
+    return {"status": "successs"}
+
+@app.get("/sec")
+async def get_sec(request: Request):
+    # check_version(request)
+    with Session(engine) as session:
+        secs = session.exec(select(Sec)).all()
+        return secs
