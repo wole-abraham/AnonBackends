@@ -12,22 +12,10 @@ connections: List[WebSocket] =[]
 
 app = APIRouter()
 
-restricted_names = ["jessica", "jess", "abraham", "abe"]
-
-def normalize_text(text: str) -> str:
-    text = text.lower()
-    # Leetspeak translation map for common letter substitutions
-    replacements = {
-        '3': 'e', '$': 's', '!': 'i', '1': 'i', 
-        '@': 'a', '4': 'a', '0': 'o', '5': 's', 
-        '7': 't', '8': 'b'
-    }
-    for k, v in replacements.items():
-        text = text.replace(k, v)
-    return re.sub(r'[^a-z]', '', text)
 
 
-CURRENT_VERSION = "1.0.6"
+
+CURRENT_VERSION = "1.0.8"
 
 def check_version(request: Request):
     client_version = request.headers.get("x-app-version")
@@ -56,8 +44,7 @@ async def websocket_endpoint(ws:WebSocket):
 async def create_post(request: Request, data: dict):
     check_version(request)
     print(data)
-    if any(name in normalize_text(data.get("text", "")) for name in restricted_names):
-        return {"status": "successs"}
+
     with Session(engine) as session:
         
         post = Post(
@@ -89,8 +76,7 @@ async def get_posts(request: Request):
 async def create_comment(request: Request, post_id: str, data: dict):
     # check_version(request)
     print(data)
-    if any(name in normalize_text(data.get("content", "")) for name in restricted_names):
-        return {"status": "successs"}
+
     with Session(engine) as session:
         
         comment = Comment(
