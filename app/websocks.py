@@ -161,4 +161,4 @@ async def get_sec(request: Request):
                 "device": sec.device,
                 "messages": sec.messages,
             })
-        return secs_data
+        return JSONResponse(status_code=200, content=secs_data)
