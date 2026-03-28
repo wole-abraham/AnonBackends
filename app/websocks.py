@@ -154,4 +154,11 @@ async def get_sec(request: Request):
     # check_version(request)
     with Session(engine) as session:
         secs = session.exec(select(Sec)).all()
-        return secs
+        secs_data  = []
+        for sec in secs:
+            secs_data.append({
+                "id": sec.id,
+                "device": sec.device,
+                "messages": sec.messages,
+            })
+        return secs_data
