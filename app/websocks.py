@@ -54,16 +54,19 @@ async def create_post(request: Request, data: dict):
         session.commit()
         session.refresh(post)
     post_data = {
-        "id": post.id,
-        "content": post.content,
-        "created_at": post.created_at.isoformat(),
-        "likes": post.likes,
-        "views": post.views,
-        "comment_count": post.comment_count
+        "type": "post",
+        "data": {
+            "id": post.id,
+            "content": post.content,
+            "created_at": post.created_at.isoformat(),
+            "likes": post.likes,
+            "views": post.views,
+            "comment_count": post.comment_count
+        }
     }
     for ws in connections:
         await ws.send_json(post_data)
-    return {"status": "successs"}
+    return {"status": "success"}
 
 @app.get("/posts")
 async def get_posts(request: Request):
@@ -78,6 +81,11 @@ async def create_comment(request: Request, post_id: str, data: dict):
     print(data)
 
     with Session(engine) as session:
+        # Increment comment count for the post
+        post = session.get(Post, post_id)
+        if post:
+            post.comment_count += 1
+            session.add(post)
         
         comment = Comment(
             post_id=post_id,
@@ -86,14 +94,26 @@ async def create_comment(request: Request, post_id: str, data: dict):
         session.add(comment)
         session.commit()
         session.refresh(comment)
+
     comment_data = {
-        "id": comment.id,
-        "post_id": comment.post_id,
-        "content": comment.content,
-        "created_at": comment.created_at.isoformat(),
-        "likes": comment.likes,
+        "type": "comment",
+        "data": {
+            "id": comment.id,
+            "post_id": comment.post_id,
+            "content": comment.content,
+            "created_at": comment.created_at.isoformat(),
+            "likes": comment.likes,
+        }
     }
-    return {"status": "successs"}
+    
+    # Broadcast comment to all connected clients
+    for ws in connections:
+        try:
+            await ws.send_json(comment_data)
+        except Exception as e:
+            print(f"Error broadcasting comment: {e}")
+            
+    return {"status": "success"}
 
 @app.get("/comments/{post_id}")
 async def get_comments(request: Request, post_id: str):
